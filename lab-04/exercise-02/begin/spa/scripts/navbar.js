@@ -24,6 +24,7 @@
     userFullname.innerText = user.name;
 
     logOutButton.style.display = 'inline-block';
+    expensesLink.style.display = 'inline-block';
   } else {
     logInButton.style.display = 'inline-block';
   }

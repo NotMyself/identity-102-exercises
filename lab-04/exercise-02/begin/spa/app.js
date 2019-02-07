@@ -3,8 +3,8 @@ const navbar = document.getElementById('navbar-container');
 const loadingIndicator = document.getElementById('loading-indicator');
 
 const auth0Client = new Auth0Login({
-  domain: '{YOUR-AUTH0-DOMAIN}',
-  client_id: '{YOUR-AUTH0-CLIENT-ID}'
+  domain: 'iamnotmyself.auth0.com',
+  client_id: 'tqzRziFwBv6JcAsCeY0RYiGHWQV623KJ'
 });
 
 window.onload = async function() {
