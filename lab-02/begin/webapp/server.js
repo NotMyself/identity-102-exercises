@@ -6,6 +6,8 @@ const session = require('cookie-session');
 const bodyParser = require('body-parser');
 const request = require('request-promise');
 const {auth, requiresAuth} = require('express-openid-connect');
+const { Issuer } = require('openid-client');
+
 
 const appUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT}`;
 
@@ -22,10 +24,17 @@ app.use(session({
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
+
 app.use(auth({
   required: false,
-  auth0Logout: true
+  auth0Logout: true,
+  authorizationParams: {
+    response_type: 'code id_token',
+    audience: process.env.API_AUDIENCE,
+    scope: 'openid profile email read:reports offline_access'
+  }
 }));
+
 
 app.get('/', (req, res) => {
   res.render('home', { user: req.openid && req.openid.user });
@@ -35,9 +44,27 @@ app.get('/user', requiresAuth(), (req, res) => {
   res.render('user', { user: req.openid && req.openid.user });
 });
 
+
 app.get('/expenses', requiresAuth(), async (req, res, next) => {
   try {
+
+    let tokenSet = req.openid.tokens;
+
+    if (tokenSet.expired()) {
+      const issuer = await Issuer.discover(process.env.ISSUER_BASE_URL);
+      const client = new issuer.Client({
+        client_id: process.env.CLIENT_ID,
+        client_secret: process.env.CLIENT_SECRET
+      });
+      tokenSet = await client.refresh(tokenSet);
+      tokenSet.refresh_token = req.openid.tokens.refresh_token;
+      req.openid.tokens = tokenSet;
+    }
+
     const expenses = await request(process.env.API_URL, {
+      headers: {
+        authorization: `Bearer ${tokenSet.access_token}`
+      },
       json: true
     });
 
@@ -49,6 +76,7 @@ app.get('/expenses', requiresAuth(), async (req, res, next) => {
     next(err);
   }
 });
+
 
 app.get('/logout', (req, res) => {
   req.session = null;
